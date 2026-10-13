@@ -117,39 +117,12 @@
     }
     .fullscreen-active .history-table-wrapper { max-height: calc(100vh - 160px) !important; }
 
-    .progress-bar-bg { background: #e2e8f0; border-radius: 10px; height: 8px; width: 100%; margin-top: 4px; overflow: hidden; }
-    .progress-bar-fill { background: #10b981; height: 100%; border-radius: 10px; transition: width 0.3s; }
-
-    /* 📄 Meter Modal - สไตล์กระดาษรายงาน A4 */
+    /* 📄 Meter Modal */
     .meter-modal { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.75); z-index: 20000; display: none; justify-content: center; align-items: center; padding: 15px; box-sizing: border-box; backdrop-filter: blur(3px); }
     .meter-modal-content { width: 100%; max-width: 800px; max-height: 95vh; overflow-y: auto; background: #d1d5db; border-radius: 8px; padding: 20px 20px 10px 20px; position: relative; border: 2px solid #9ca3af; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
     
     .close-modal-btn { position: sticky; top: 0; float: right; background: #ef4444; color: white; border: 2px solid #fff; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; font-weight: bold; font-size: 20px; display: flex; justify-content: center; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.4); z-index: 10; margin-bottom: -40px; margin-right: -10px; transition: 0.2s; }
     .close-modal-btn:hover { background: #dc2626; transform: scale(1.1); }
-    
-    .paper-sheet { background: #fff; padding: 30px 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); margin-top: 20px; margin-bottom: 25px; color: #000; position: relative; font-family: 'Sarabun', 'Kanit', sans-serif; border-radius: 2px; }
-    .paper-title { text-align: center; font-size: 20px; font-weight: bold; margin-top: 0; margin-bottom: 20px; text-decoration: underline; text-decoration-thickness: 1.5px; text-underline-offset: 4px; }
-    
-    .paper-header-grid { display: grid; grid-template-columns: 1.2fr 1fr; column-gap: 15px; row-gap: 12px; margin-bottom: 20px; font-size: 15px; }
-    .paper-field { display: flex; align-items: flex-end; }
-    .paper-field span:first-child { margin-right: 8px; white-space: nowrap; font-weight: bold; }
-    .field-value { flex: 1; border-bottom: 1px dotted #000; padding-bottom: 2px; min-height: 20px; font-family: 'Courier New', monospace; font-size: 16px; color: #1e3a8a; font-weight: bold; text-align: center;}
-    
-    .paper-table { width: 100%; border-collapse: collapse; border: 2px solid #000; font-size: 14px; text-align: center; }
-    .paper-table th, .paper-table td { border: 1px solid #000; padding: 8px 4px; }
-    .paper-table th { background: #f9fafb; font-weight: bold; font-size: 13px; }
-    .paper-table td { color: #1f2937; }
-    
-    .status-badge { display: inline-block; padding: 4px 10px; border-radius: 6px; font-weight: bold; font-size: 13px; margin-top: 10px; }
-    .status-done { background: #d1fae5; color: #065f46; border: 1px solid #34d399; }
-    .status-ongoing { background: #fef3c7; color: #92400e; border: 1px solid #fbbf24; }
-
-    @media(max-width: 600px) {
-      .paper-header-grid { grid-template-columns: 1fr; }
-      .paper-sheet { padding: 20px 10px; }
-      .paper-table { font-size: 12px; }
-      .paper-table th, .paper-table td { padding: 4px 2px; }
-    }
   </style>
 </head>
 <body>
@@ -291,14 +264,6 @@
     </div>
   </div>
 
-</div>
-
-<!-- 📄 Modal ใบมิเตอร์ความก้าวหน้า สไตล์แบบฟอร์มกระดาษ A4 -->
-<div id="meterModal" class="meter-modal">
-  <div class="meter-modal-content">
-    <button onclick="document.getElementById('meterModal').style.display='none'" class="close-modal-btn" title="ปิดหน้าต่าง"><i class="fa-solid fa-xmark"></i></button>
-    <div id="meterBody" style="min-height: 200px;"></div>
-  </div>
 </div>
 
 <script>
@@ -461,7 +426,6 @@
       if (savedOrder && savedStep) {
           document.getElementById('history_order_filter').value = savedOrder;
           stepSelectFilter.value = savedStep;
-          
           sessionStorage.removeItem('lastSavedOrder');
           sessionStorage.removeItem('lastSavedStep');
       } else {
@@ -687,6 +651,7 @@
           id_order: task.id_order,
           order_no: task.order_no,
           id_target: task.id_target,
+          id_work: task.id_work,
           work_period: workPeriodVal,
           hours: hoursPerEmp,
           qty: qtyPerEmp,
@@ -749,14 +714,17 @@
       let savedDate = "";
       for (let item of preparedPayload) {
         savedDate = item.date;
+        
+        // แมปชื่อคอลัมน์ให้ตรงกับตาราง daily_production ใน Supabase
         let recordBody = {
-          date: item.date,
+          record_date: item.date,
           id_name: item.id_name,
-          id_order: item.id_order,
+          id_work: item.id_work,
           id_target: item.id_target,
+          id_order: item.id_order,
+          produced_amount: item.qty,
+          hour_work: item.hours,
           work_period: item.work_period,
-          hours: item.hours,
-          qty: item.qty,
           remark: item.remark ? `${item.remark} [Batch Smart-Allocated]` : `[Batch Smart-Allocated]`
         };
 
@@ -764,7 +732,7 @@
           recordBody.id_reason = parseInt(reasonVal);
         }
 
-        let res = await fetch(SUPABASE_URL + "/production_records", {
+        let res = await fetch(SUPABASE_URL + "/daily_production", {
           method: "POST",
           headers: headers,
           body: JSON.stringify(recordBody)
@@ -772,13 +740,12 @@
 
         if (!res.ok) {
           let errText = await res.text();
-          throw new Error(errText);
+          throw new Error(`[${res.status}] ${errText}`);
         }
       }
 
       alert("✅ บันทึกข้อมูลงานกลุ่มเรียบร้อยแล้วครับ!");
       
-      // ตั้งค่าตัวกรองวันที่ประวัติให้เป็น "วันที่ล่าสุดที่เพิ่งเซฟไป" ทันที
       if (savedDate) {
         document.getElementById('history_date_start').value = savedDate;
         document.getElementById('history_date_end').value = savedDate;
@@ -794,7 +761,6 @@
       const d = new Date();
       document.getElementById('batch_date').value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
-      // โหลดประวัติของวันที่เพิ่งบันทึกมาแสดงทันที
       loadProductionHistory();
 
     } catch (e) {
@@ -808,56 +774,71 @@
   async function loadProductionHistory() {
     const startDate = document.getElementById('history_date_start').value;
     const endDate = document.getElementById('history_date_end').value;
-    const orderFilter = document.getElementById('history_order_filter').value.trim().split('(')[0].trim();
+    const orderFilter = document.getElementById('history_order_filter').value.trim().split('(')[0].trim().toLowerCase();
     const stepFilter = document.getElementById('history_step_filter').value;
     const tbody = document.getElementById('historyTbody');
 
     tbody.innerHTML = `<tr><td colspan="6" style="padding: 15px; color: var(--text-muted);"><i class="fa-solid fa-spinner fa-spin"></i> กำลังค้นหาข้อมูล...</td></tr>`;
 
     try {
-      let queryUrl = `${SUPABASE_URL}/production_records?select=id_record,date,qty,hours,work_period,remark,employees(name),orders(order_no,id_work),targets(id_step,target_amount,id_work),production_steps(step_name),work_items(work_code)&order=date.desc,id_record.desc&limit=100`;
+      let queryUrl = `${SUPABASE_URL}/daily_production?select=*&order=record_date.desc,id.desc&limit=100`;
 
-      if (startDate) queryUrl += `&date=gte.${startDate}`;
-      if (endDate) queryUrl += `&date=lte.${endDate}`;
+      if (startDate) queryUrl += `&record_date=gte.${startDate}`;
+      if (endDate) queryUrl += `&record_date=lte.${endDate}`;
 
       let res = await fetch(queryUrl, { headers });
       if(!res.ok) throw new Error("โหลดประวัติไม่สำเร็จ");
       let data = await res.json();
 
+      let enrichedData = data.map(item => {
+        let emp = globalEmployees.find(e => String(e.id_name) === String(item.id_name));
+        let ord = globalOrders.find(o => String(o.id_order) === String(item.id_order));
+        let target = globalTargets.find(t => String(t.id_target) === String(item.id_target));
+        let step = target ? globalSteps.find(s => String(s.id_step) === String(target.id_step)) : null;
+        let work = globalWorkItems.find(w => String(w.id_work) === String(item.id_work)) || (ord ? globalWorkItems.find(w => String(w.id_work) === String(ord.id_work)) : null);
+
+        return {
+          ...item,
+          emp_name: emp ? emp.name : `EMP #${item.id_name}`,
+          order_no: ord ? ord.order_no : `-`,
+          work_code: work ? work.work_code : `WorkID:${item.id_work}`,
+          step_name: step ? step.step_name : (target ? `Step #${target.id_step}` : `-`),
+          id_step: target ? target.id_step : null,
+          date: item.record_date,
+          qty: item.produced_amount,
+          hours: item.hour_work
+        };
+      });
+
       if (orderFilter) {
-        data = data.filter(item => item.orders && String(item.orders.order_no).toLowerCase().includes(orderFilter.toLowerCase()));
+        enrichedData = enrichedData.filter(item => String(item.order_no).toLowerCase().includes(orderFilter));
       }
 
       if (stepFilter) {
-        data = data.filter(item => item.targets && String(item.targets.id_step) === String(stepFilter));
+        enrichedData = enrichedData.filter(item => String(item.id_step) === String(stepFilter));
       }
 
-      if (data.length === 0) {
+      if (enrichedData.length === 0) {
         tbody.innerHTML = `<tr><td colspan="6" style="padding: 15px; color: var(--text-muted);">ไม่พบประวัติการทำงานในเงื่อนไขนี้</td></tr>`;
         return;
       }
 
       tbody.innerHTML = '';
-      data.forEach(item => {
-        let empName = item.employees ? item.employees.name : `EMP #${item.id_name}`;
-        let orderNo = item.orders ? item.orders.order_no : `-`;
-        let workCode = item.work_items ? item.work_items.work_code : (item.orders ? `WorkID:${item.orders.id_work}` : `-`);
-        let stepName = item.production_steps ? item.production_steps.step_name : (item.targets ? `Step #${item.targets.id_step}` : `-`);
-        
+      enrichedData.forEach(item => {
         let tr = document.createElement('tr');
         tr.innerHTML = `
           <td>${item.date}</td>
-          <td><b>${empName}</b></td>
+          <td><b>${item.emp_name}</b></td>
           <td style="text-align: left; padding-left: 8px;">
-            <div style="color: var(--blue-dark); font-weight: bold;">[${workCode}] ใบสั่ง: ${orderNo}</div>
-            <div style="font-size: 10px; color: var(--text-muted);">ขั้นตอน: ${stepName} (${item.work_period}, ${item.hours} ชม.)</div>
+            <div style="color: var(--blue-dark); font-weight: bold;">[${item.work_code}] ใบสั่ง: ${item.order_no}</div>
+            <div style="font-size: 10px; color: var(--text-muted);">ขั้นตอน: ${item.step_name} (${item.work_period}, ${item.hours} ชม.)</div>
           </td>
           <td><b>${item.qty}</b></td>
           <td>
             <span style="font-size: 10px; color: var(--text-muted);">${item.remark || '-'}</span>
           </td>
           <td>
-            <button class="btn-row-delete" onclick="deleteRecord(${item.id_record})"><i class="fa-solid fa-trash"></i> ลบ</button>
+            <button class="btn-row-delete" onclick="deleteRecord(${item.id})"><i class="fa-solid fa-trash"></i> ลบ</button>
           </td>
         `;
         tbody.appendChild(tr);
@@ -868,10 +849,10 @@
     }
   }
 
-  async function deleteRecord(id_record) {
+  async function deleteRecord(id) {
     if(!confirm("ต้องการลบรายการบันทึกนี้ใช่หรือไม่?")) return;
     try {
-      let res = await fetch(`${SUPABASE_URL}/production_records?id_record=eq.${id_record}`, {
+      let res = await fetch(`${SUPABASE_URL}/daily_production?id=eq.${id}`, {
         method: 'DELETE',
         headers: headers
       });
